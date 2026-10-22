@@ -34,7 +34,7 @@ Pergunte: *"e agora, quem aprova? onde isso fica registrado?"*
 
 ```
 Leia o CLAUDE.md da raiz e aulas/aula-04-produtos-de-dados-ia/prd/CLAUDE.md. Use as skills
-databricks-apps e databricks-lakebase. O app minha-torre já está no ar (prompt 2 da noite 4).
+databricks-apps e databricks-lakebase. O app minha-torre já está no ar (prompt 1 da noite 4).
 
 1. Lakebase:
    databricks postgres create-project minha-torre --profile <perfil>

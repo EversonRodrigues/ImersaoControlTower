@@ -11,7 +11,7 @@ Este arquivo é a sequência inteira, na ordem, para quem quer refazer sozinho.
 | Noite | Prompts | O que existe no fim |
 |---|---|---|
 | [**3** · engenheiro de dados](aulas/aula-03-modelagem-claude-code) | o bundle (à mão) e 1 a 4 | o job de ingestão da noite 2 como código, o pipeline que integra as 3 ferramentas, gold com testes, status semanal com IA e o dashboard |
-| [**4** · cientista e engenheiro de IA](aulas/aula-04-produtos-de-dados-ia) | 5 e 6 | metric view + o agente de IA (Genie curado) e o app da Torre. O modelo de ML e a aprovação no Lakebase estão em [`bonus/`](aulas/aula-04-produtos-de-dados-ia/bonus) |
+| [**4** · cientista e engenheiro de IA](aulas/aula-04-produtos-de-dados-ia) | 5 e 6 | o app da Torre e o agente de IA (metric view + Genie curado), plugado no app. O modelo de ML e a aprovação no Lakebase estão em [`bonus/`](aulas/aula-04-produtos-de-dados-ia/bonus) |
 
 ---
 

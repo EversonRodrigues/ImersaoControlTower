@@ -11,8 +11,8 @@
 | | Entrega | O que o dono ganha | O Databricks por trás | Como |
 |---|---|---|---|---|
 | 🤖 | **O modelo de ML** | a chance de cada projeto estourar nos próximos 30 dias, com o motivo em português | Notebooks serverless · MLflow · modelos no Unity Catalog · Jobs | **demonstração** do instrutor (o prompt completo está no [bônus](bonus/prompt-modelo-ml.md)) |
-| 💬 | **O agente de IA** | pergunta em português e recebe a resposta com o número certo (e o SQL, se quiser conferir) | Genie Agents · Metric Views · AI Functions · Unity Catalog | **prompt 1** · [`prompt-01-agente.md`](prd/prompt-01-agente.md) |
-| 📱 | **O Data App** | uma URL com o login da empresa: projetos em risco, simulador de realocação e o agente dentro | Databricks Apps · AppKit · service principal | **prompt 2** · [`prompt-02-app.md`](prd/prompt-02-app.md) |
+| 📱 | **O Data App** | uma URL com o login da empresa: projetos em risco e simulador de realocação | Databricks Apps · AppKit · service principal | **prompt 1** · [`prompt-01-app.md`](prd/prompt-01-app.md) |
+| 💬 | **O agente de IA** | pergunta em português e recebe a resposta com o número certo (e o SQL); vira a aba Perguntar do app | Genie Agents · Metric Views · AI Functions · Unity Catalog | **prompt 2** · [`prompt-02-agente.md`](prd/prompt-02-agente.md) |
 
 E no fim, **o pitch de 3 minutos** para pedir o piloto ao dono ([`pitch.md`](pitch.md)) e **o que fazer com
 isso no mercado de trabalho**. Para casa, em [`bonus/`](bonus): o prompt do modelo, a aprovação no
@@ -50,9 +50,9 @@ Na demonstração do modelo, ele diz outra coisa:
 
 E o calendário piora a conta: é o marketplace de um cliente de varejo. No freeze da Black Friday do ano
 passado, o SPI dele caiu de **0,99 para 0,70**. O de 2026 começa em **01/11**, daqui a 15 dias, e trava
-deploy. O modelo não sabe do calendário; **o agente (prompt 1) sabe**: a pergunta "o que vai dar errado
-no próximo mês" junta o freeze e as entregas atrasadas da CodeForge. E **o app (prompt 2)** põe o
-simulador na frente do dono, para mover uma SRE parada para o PRJ-011.
+deploy. **O app (prompt 1)** põe o risco e o simulador na frente do dono, para mover uma SRE parada
+para o PRJ-011. O modelo não sabe do calendário; **o agente (prompt 2) sabe**: a pergunta "o que vai dar
+errado no próximo mês" junta o freeze e as entregas atrasadas da CodeForge.
 
 Guarde esse projeto: é ele que a gente persegue a noite toda.
 
@@ -68,10 +68,10 @@ flowchart LR
     MO --> SC["ml_score<br/>gold.score_estouro_30d"]
     N3 --> MV["metricas_governadas<br/>gold.mv_projetos"]
   end
-  SC -.->|se existir| G["prompt 1 · Agente de IA<br/>Genie Farol · Diretoria"]
+  SC -.->|se existir| G["prompt 2 · Agente de IA<br/>Genie Farol · Diretoria"]
   MV --> G
   N3 --> G
-  SC -.->|se existir| APP["prompt 2 · Data App<br/>Projeto Farol · login SSO"]
+  SC -.->|se existir| APP["prompt 1 · Data App<br/>Projeto Farol · login SSO"]
   N3 --> APP
   G -->|aba Perguntar| APP
   APP -.->|bônus| LB[("Lakebase<br/>torre.decisoes")]
@@ -111,8 +111,8 @@ deploy. Enquanto ele trabalha, leia a seção **"🧰 O que o Databricks oferece
 
 | # | Entrega | Deploy | Arquivo |
 |---|---|---|---|
-| 1 | **O agente de IA**: `mv_projetos` e o Genie "Farol · Diretoria", com benchmark | `bundle deploy` + `run` + `deploy` | [`prd/prompt-01-agente.md`](prd/prompt-01-agente.md) |
-| 2 | **O Data App**: projetos em risco, simulador, perguntar | `apps deploy` | [`prd/prompt-02-app.md`](prd/prompt-02-app.md) |
+| 1 | **O Data App**: projetos em risco e simulador | `bundle deploy` + `apps deploy` | [`prd/prompt-01-app.md`](prd/prompt-01-app.md) |
+| 2 | **O agente de IA**: `mv_projetos` e o Genie "Farol · Diretoria", com benchmark, plugado no app como a aba Perguntar | `bundle deploy` + `run` + `deploy`, e `apps deploy` | [`prd/prompt-02-agente.md`](prd/prompt-02-agente.md) |
 
 > **Instrutor, antes da aula:** o job do gabarito rodado (com as tarefas `ml_*`, para a demonstração) e o
 > `farol-torre` publicado: `bash aulas/aula-04-produtos-de-dados-ia/torre-app/scripts/subir-tudo.sh <perfil>`.
@@ -205,7 +205,72 @@ antes."*
 
 ---
 
-## 2. 💬 Prompt 1 · O agente de IA (20 min)
+## 2. 📱 Prompt 1 · O Data App (20 min)
+
+**O problema.** O dono não abre SQL Editor. Quatro noites de trabalho estão atrás de uma tela que só o
+time de dados usa. O Farol precisa de uma **URL**, e de um lugar onde a decisão acontece.
+
+### 🧰 O que o Databricks oferece para apps (leia enquanto o prompt roda)
+
+| Recurso | O que é | No app da Vértice |
+|---|---|---|
+| **Databricks Apps** | Hospeda um site dentro do workspace. Login com a conta da empresa (SSO), sem servidor, sem senha nova. | O app "Projeto Farol": uma URL que o dono abre no celular. No Free Edition, **3 apps** por workspace. |
+| **AppKit** (Node + React + TypeScript) | O kit oficial: `databricks apps init` monta o projeto em ~10 s, com *plugins* prontos. | Plugin **analytics** (lê a gold) no prompt 1; plugin **genie** (o agente numa aba) no prompt 2. |
+| **Leitura como arquivo `.sql`** | Cada consulta mora em `config/queries/*.sql`. O `typegen` lê o Unity Catalog e gera os tipos do TypeScript. | `kpis.sql`, `projetos_risco.sql`, `pessoas_ociosas.sql`. O `COMMENT` das tabelas vira documentação no editor. |
+| **Apps em Python** | Streamlit, Dash, Gradio, FastAPI: a mesma hospedagem, outro framework. | Não usamos hoje; vale para quem prefere ficar em Python. |
+| **Service principal** | O app é um **usuário robô** do Unity Catalog. Nasce sem acesso a nada. | `GRANT USE CATALOG / USE SCHEMA / SELECT` no `conceder-acesso.sh`. Sem isso o build falha: é a aula de governança. |
+| **Autorização em nome do usuário** | Algumas ações o app faz **como você** (OAuth). No 1º acesso, a tela "Permission Requested". | No prompt 2, a aba Perguntar usa o Genie com a sua permissão. **Authorize** uma vez. |
+| **Lakebase** | Um Postgres gerenciado pelo Databricks, para **escrever** uma linha por clique, na hora. | No bônus: a tabela `torre.decisoes`, com o e-mail de quem aprovou. No `farol-torre`, o botão Aprovar já grava. |
+
+**Leitura no warehouse, escrita no Lakebase.** A gold é ótima para ler muito dado de uma vez e ruim
+para gravar um clique por vez. O Postgres é o contrário. O app usa cada um para o que ele faz bem.
+
+### Dashboard, agente ou app?
+
+| | Dashboard (noite 3) | App (prompt 1) | Agente (prompt 2) |
+|---|---|---|---|
+| **Para quê** | acompanhar os mesmos números toda semana | um **fluxo** com regra de negócio e uma **ação** | responder a pergunta que ninguém previu |
+| **Quem monta** | analista, arrastando | engenheiro (ou o Claude Code), com código | curadoria: tabelas + instruções + benchmark |
+| **Exemplo da Vértice** | SPI, CPI e estouro da carteira | simular COL0017 → PRJ-011 e aprovar | "por que o PRJ-011 atrasou?" |
+
+Os três leem a **mesma gold** e a **mesma fórmula** (`mv_projetos`). É isso que faz o número bater em
+qualquer tela.
+
+### O que o Claude Code faz
+
+1. `databricks apps init` monta o esqueleto do app (React + TypeScript).
+2. As leituras viram arquivos `.sql` em `config/queries/`. O score vem por uma rota do servidor (se a
+   tabela faltar, a tela mostra "—" em vez de quebrar o build).
+3. Duas telas: **Projetos em risco** (KPIs e a coluna P(estouro), "—" sem o modelo) e **Simulador** (pessoa
+   ociosa → projeto que precisa). A terceira, **Perguntar**, entra no prompt 2.
+4. `bundle deploy` cria o app e o **service principal**; `conceder-acesso.sh` dá a ele os `GRANT` na gold;
+   `databricks apps deploy` publica o código.
+
+> **Esperado:** sem os `GRANT`, o deploy falha com `INSUFFICIENT_PERMISSIONS`. Não é bug: é o robô sem
+> permissão. Rode o `conceder-acesso.sh` e faça o deploy de novo.
+
+> **20 minutos é apertado.** Cole o prompt e, **enquanto ele faz o build**, explique Apps, AppKit e o
+> service principal. **Plano B:** o `farol-torre` publicado antes da aula. Se o deploy de alguém não
+> terminar, a demo segue pela URL dele, e o aluno termina em casa.
+
+![Tela de consentimento "Permission Requested" do app farol-torre](../../docs/img/recurso-app-authorize.jpg)
+
+*Depois do prompt 2, "Permission Requested": o app pede para agir em seu nome. Repare em "Manage your
+genie spaces": é o que deixa a aba Perguntar usar o Genie como você. Clique **Authorize** uma vez.*
+
+**O simulador mostra a conta.** O dono não aprova caixa-preta. Para COL0017 → PRJ-011:
+
+- **151 h** no mês (as horas paradas × 4 semanas);
+- **R$ 30,1 mil** de ociosidade que deixa de ser paga;
+- **19,0 dias** de cronograma recuperados (dias de impacto da falta de SRE nos últimos 90 dias ÷ 90 × 30);
+- **R$ 8,0 mil** de onboarding (40 h × custo da hora);
+- **saldo de R$ 22,1 mil** no mês.
+
+Os 19 dias ficam fora da conta em R$: sem uma multa ou receita atrelada, dia de cronograma não vira dinheiro.
+
+---
+
+## 3. 💬 Prompt 2 · O agente de IA (20 min)
 
 **O problema.** Na segunda, o Genie da noite 1 errou as 4 perguntas ("nenhum atraso custa nada"). E o
 CPI do mesmo projeto tinha três valores, dependendo de quem calculou. O dono não escreve SQL e não
@@ -265,77 +330,14 @@ permissão é a do Unity Catalog, e não há servidor nem código de agente para
 2. O agente **"Farol · Diretoria"** como recurso do bundle: tabelas, instruções, exemplos de SQL. O
    score entra só se a tabela existir.
    Ordem que importa: o Genie só nasce se as tabelas existem (deploy → run → deploy).
-3. O benchmark: 20 perguntas, cada uma comparada com o SQL de referência.
+3. O benchmark: 20 perguntas, cada uma comparada com o SQL de referência (~6 min: rode enquanto explica a curadoria).
+4. **Pluga o agente no app** do prompt 1: plugin `genie`, a aba **Perguntar** e `apps deploy`. Na volta ao
+   app, "Permission Requested" → **Authorize**.
 
 ![O agente achando as duas SREs paradas no PRJ-007](../../docs/img/noite2-genie.jpg)
 
 *"Tenho gente parada enquanto outro projeto pede gente?": o agente acha as duas SREs a ~5% no PRJ-007
 enquanto o PRJ-011 está bloqueado por falta de SRE. (Print do ensaio de 18/10, antes do score.)*
-
----
-
-## 3. 📱 Prompt 2 · O Data App (20 min)
-
-**O problema.** O dono não abre SQL Editor. Quatro noites de trabalho estão atrás de uma tela que só o
-time de dados usa. O Farol precisa de uma **URL**, e de um lugar onde a decisão acontece.
-
-### 🧰 O que o Databricks oferece para apps (leia enquanto o prompt roda)
-
-| Recurso | O que é | No app da Vértice |
-|---|---|---|
-| **Databricks Apps** | Hospeda um site dentro do workspace. Login com a conta da empresa (SSO), sem servidor, sem senha nova. | O app "Projeto Farol": uma URL que o dono abre no celular. No Free Edition, **3 apps** por workspace. |
-| **AppKit** (Node + React + TypeScript) | O kit oficial: `databricks apps init` monta o projeto em ~10 s, com *plugins* prontos. | Plugin **analytics** (lê a gold) e plugin **genie** (o agente do prompt 2 numa aba). |
-| **Leitura como arquivo `.sql`** | Cada consulta mora em `config/queries/*.sql`. O `typegen` lê o Unity Catalog e gera os tipos do TypeScript. | `kpis.sql`, `projetos_risco.sql`, `pessoas_ociosas.sql`. O `COMMENT` das tabelas vira documentação no editor. |
-| **Apps em Python** | Streamlit, Dash, Gradio, FastAPI: a mesma hospedagem, outro framework. | Não usamos hoje; vale para quem prefere ficar em Python. |
-| **Service principal** | O app é um **usuário robô** do Unity Catalog. Nasce sem acesso a nada. | `GRANT USE CATALOG / USE SCHEMA / SELECT` no `conceder-acesso.sh`. Sem isso o build falha: é a aula de governança. |
-| **Autorização em nome do usuário** | Algumas ações o app faz **como você** (OAuth). No 1º acesso, a tela "Permission Requested". | A aba Perguntar usa o Genie com a sua permissão. **Authorize** uma vez. |
-| **Lakebase** | Um Postgres gerenciado pelo Databricks, para **escrever** uma linha por clique, na hora. | No bônus: a tabela `torre.decisoes`, com o e-mail de quem aprovou. No `farol-torre`, o botão Aprovar já grava. |
-
-**Leitura no warehouse, escrita no Lakebase.** A gold é ótima para ler muito dado de uma vez e ruim
-para gravar um clique por vez. O Postgres é o contrário. O app usa cada um para o que ele faz bem.
-
-### Dashboard, agente ou app?
-
-| | Dashboard (noite 3) | Agente (prompt 1) | App (prompt 2) |
-|---|---|---|---|
-| **Para quê** | acompanhar os mesmos números toda semana | responder a pergunta que ninguém previu | um **fluxo** com regra de negócio e uma **ação** |
-| **Quem monta** | analista, arrastando | curadoria: tabelas + instruções + benchmark | engenheiro (ou o Claude Code), com código |
-| **Exemplo da Vértice** | SPI, CPI e estouro da carteira | "por que o PRJ-011 atrasou?" | simular COL0017 → PRJ-011 e aprovar |
-
-Os três leem a **mesma gold** e a **mesma fórmula** (`mv_projetos`). É isso que faz o número bater em
-qualquer tela.
-
-### O que o Claude Code faz
-
-1. `databricks apps init` monta o esqueleto do app (React + TypeScript).
-2. As leituras viram arquivos `.sql` em `config/queries/`. O score vem por uma rota do servidor (se a
-   tabela faltar, a tela mostra "—" em vez de quebrar o build).
-3. Três telas: **Projetos em risco** (KPIs e a coluna P(estouro), "—" sem o modelo), **Simulador** (pessoa
-   ociosa → projeto que precisa) e **Perguntar** (o agente do prompt 1 dentro do app).
-4. `bundle deploy` cria o app e o **service principal**; `conceder-acesso.sh` dá a ele os `GRANT` na gold;
-   `databricks apps deploy` publica o código.
-
-> **Esperado:** sem os `GRANT`, o deploy falha com `INSUFFICIENT_PERMISSIONS`. Não é bug: é o robô sem
-> permissão. Rode o `conceder-acesso.sh` e faça o deploy de novo.
-
-> **20 minutos é apertado.** Cole o prompt e, **enquanto ele faz o build**, explique Apps, AppKit e o
-> service principal. **Plano B:** o `farol-torre` publicado antes da aula. Se o deploy de alguém não
-> terminar, a demo segue pela URL dele, e o aluno termina em casa.
-
-![Tela de consentimento "Permission Requested" do app farol-torre](../../docs/img/recurso-app-authorize.jpg)
-
-*No primeiro acesso, "Permission Requested": o app pede para agir em seu nome. Repare em "Manage your
-genie spaces": é o que deixa a aba Perguntar usar o Genie como você. Clique **Authorize** uma vez.*
-
-**O simulador mostra a conta.** O dono não aprova caixa-preta. Para COL0017 → PRJ-011:
-
-- **151 h** no mês (as horas paradas × 4 semanas);
-- **R$ 30,1 mil** de ociosidade que deixa de ser paga;
-- **19,0 dias** de cronograma recuperados (dias de impacto da falta de SRE nos últimos 90 dias ÷ 90 × 30);
-- **R$ 8,0 mil** de onboarding (40 h × custo da hora);
-- **saldo de R$ 22,1 mil** no mês.
-
-Os 19 dias ficam fora da conta em R$: sem uma multa ou receita atrelada, dia de cronograma não vira dinheiro.
 
 ---
 
@@ -402,10 +404,10 @@ python3 scripts/genie.py benchmark "Farol · Diretoria" \
 | modelo (demo) | Score: alto · medio · baixo | 18 · 4 · 19 |
 | modelo (demo) | Projetos "ok" para a regra com risco alto ou médio | 5 (entre eles PRJ-013, 0,89, e PRJ-024, 0,46) |
 | modelo (demo) | Vazamento: corte no tempo · aleatório · com índice do futuro | 0,92 · 0,92 · **0,99** (barrado pelo teste de 0,98) |
-| prompt 1 · agente | `mv_projetos`: SPI · CPI · estouro · críticos · melancias | 0,92 · 0,97 · R$ 6,47 mi · 7 · 4 |
-| prompt 1 · agente | Benchmark do "Farol · Diretoria" | 20/20 (18/10, antes do score); com o score: *a medir no ensaio* |
-| prompt 2 · app | em risco · críticos · melancias · estouro · alto risco em 30 dias | **17 de 41** · 7 · 4 · **R$ 6,5 mi** · 18 ("—" sem o modelo) |
-| prompt 2 · app | Simulador COL0017 (PRJ-007) → PRJ-011 | 151 h no mês · R$ 30,1 mil de ociosidade evitada · **19,0 dias** recuperados · onboarding R$ 8,0 mil · saldo R$ 22,1 mil |
+| prompt 1 · app | em risco · críticos · melancias · estouro · alto risco em 30 dias | **17 de 41** · 7 · 4 · **R$ 6,5 mi** · 18 ("—" sem o modelo) |
+| prompt 1 · app | Simulador COL0017 (PRJ-007) → PRJ-011 | 151 h no mês · R$ 30,1 mil de ociosidade evitada · **19,0 dias** recuperados · onboarding R$ 8,0 mil · saldo R$ 22,1 mil |
+| prompt 2 · agente | `mv_projetos`: SPI · CPI · estouro · críticos · melancias | 0,92 · 0,97 · R$ 6,47 mi · 7 · 4 |
+| prompt 2 · agente | Benchmark do "Farol · Diretoria" | 20/20 (18/10, antes do score); com o score: *a medir no ensaio* |
 
 Tudo com `random_state=42` e seed 42: rodando de novo, dá igual. O job inteiro, com as 10 tarefas,
 levou **9 min 55 s** no ensaio de 21/10.
@@ -424,8 +426,8 @@ levou **9 min 55 s** no ensaio de 21/10.
 |---|---:|---|
 | Abertura | 10 | o arco das 4 noites; as 4 perguntas do dono; o PRJ-024 "ok" no quadro |
 | O modelo (demo) | 15 | a sala propõe as regras simples; o ML no Databricks; as 5 decisões; o PRJ-024 com 46% |
-| Prompt 1 · o agente | 20 | a mesma pergunta, três CPIs; o Genie da noite 1 errando; o que é agente; o novo acertando; o benchmark |
-| Prompt 2 · o app | 20 | `apps list` (limite de 3), Apps, AppKit e o service principal durante o build, o GRANT ao vivo, a URL, o simulador |
+| Prompt 1 · o app | 20 | `apps list` (limite de 3), Apps, AppKit e o service principal durante o build, o GRANT ao vivo, a URL, o simulador |
+| Prompt 2 · o agente | 20 | a mesma pergunta, três CPIs; o Genie da noite 1 errando; o que é agente; o benchmark; a aba Perguntar no app e o Authorize |
 | Pitch | 10 | os 3 minutos, ao vivo, com a demo |
 | Mercado de trabalho | 10 | as 4 vagas, o portfólio que já está pronto, o próximo passo |
 | Folga | 5 | perguntas ou atraso |
@@ -456,7 +458,7 @@ publicado antes da aula. Nunca corte o pitch.
 Limpar para ensaiar de novo:
 
 ```bash
-bash aulas/aula-04-produtos-de-dados-ia/prd/99-limpar-modelo.sh <perfil> [--apagar]   # só o modelo (prompt 1)
+bash aulas/aula-04-produtos-de-dados-ia/prd/99-limpar-modelo.sh <perfil> [--apagar]   # só o modelo (bônus)
 bash aulas/aula-04-produtos-de-dados-ia/prd/99-limpar-aula-04.sh <perfil> [--apagar]  # o app (e o Lakebase do bônus)
 ```
 
@@ -467,7 +469,7 @@ bash aulas/aula-04-produtos-de-dados-ia/prd/99-limpar-aula-04.sh <perfil> [--apa
 | Arquivo | Para que serve |
 |---|---|
 | `prd/CLAUDE.md` | contexto que o Claude Code lê antes dos prompts (junto com o `CLAUDE.md` da noite 3) |
-| `prd/prompt-01-agente.md` · `prd/prompt-02-app.md` | os 2 prompts da noite, com o que mostrar, o que falar e "se der errado" |
+| `prd/prompt-01-app.md` · `prd/prompt-02-agente.md` | os 2 prompts da noite, com o que mostrar, o que falar e "se der errado" |
 | `prd/genie-benchmark-diretoria.json` | 20 perguntas com SQL de referência (o teste do agente) |
 | `prd/99-limpar-modelo.sh` · `prd/99-limpar-aula-04.sh` | apagam só o modelo, ou só o app e o Lakebase |
 | `99-verificacao.sql` | modelo, metric view e os números do app, esperado × obtido |

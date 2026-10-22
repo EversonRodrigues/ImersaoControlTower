@@ -1,11 +1,12 @@
-# Prompt 1 · O agente de IA: o dono pergunta em português
+# Prompt 2 · O agente de IA: o dono pergunta em português
 
 **Entrega:** o agente de IA da diretoria, um **Genie Agent** ("Farol · Diretoria") que recebe a pergunta
 em português, escreve o SQL, roda nas tabelas que você liberou e responde citando os números. Embaixo
 dele, a metric view `gold.mv_projetos` (a fórmula de cada KPI num lugar só, tarefa
 `metricas_governadas` no job). O Genie é recurso do bundle e lê a gold, a metric view e, **se existir**,
 o score do modelo (`gold.score_estouro_30d`, demonstrado na abertura e no [bônus](../bonus/prompt-modelo-ml.md)).
-Testado com um benchmark de 20 perguntas. **Deploy nº 1 da noite.**
+Testado com um benchmark de 20 perguntas e, no fim, **plugado no app do prompt 1** como a aba
+**Perguntar**. **Deploy nº 2 da noite** (o bundle `vertice` e o `apps deploy` do app).
 
 > Na segunda, o Genie da noite 1 errou as quatro perguntas do dono ("nenhum atraso custa nada"). O
 > modelo de IA dele é o mesmo de hoje. Mudou tudo que está embaixo: o dado integrado e testado, a
@@ -121,6 +122,18 @@ Rode e me mostre a saída:
   python3 scripts/genie.py benchmark "Farol · Diretoria" aulas/aula-04-produtos-de-dados-ia/prd/genie-benchmark-diretoria.json --profile <perfil>
 Se o benchmark der menos de 16/20, mostre os erros e ajuste a INSTRUÇÃO
 (não a pergunta), gere o JSON, faça deploy e rode de novo.
+
+3. Plugue o agente no app minha-torre/ (o do prompt 1), como a tela Perguntar:
+   - databricks.yml do app: variáveis genie_space_id e genie_space_name
+     (o id do "Farol · Diretoria", pelo bundle summary); no recurso do app,
+     user_api_scopes: [dashboards.genie] e o recurso
+     { name: genie-space, genie_space: { name, space_id, permission: CAN_RUN } }.
+   - app.yaml: env DATABRICKS_GENIE_SPACE_ID com valueFrom: genie-space.
+   - server: genie() nos plugins do createApp.
+   - client: tela Perguntar com <GenieChat alias="default" /> e o item no menu.
+   Nenhum arquivo *.geniespace.json dentro da pasta do app.
+   Dentro de minha-torre/: npm run typecheck, databricks bundle deploy e
+   databricks apps deploy --profile <perfil>. Me mostre a URL.
 ```
 
 > **O `genie.py` e o benchmark** vêm do repositório do curso: o passo 0 do
@@ -150,7 +163,12 @@ As quatro perguntas do dono, no Genie:
    nos e-commerces (PRJ-003, 011, 024); com o score, também os projetos "ok" com risco alto ou médio
    (entre eles o **PRJ-024, 46%**).
 
-O benchmark de 20 perguntas: **20/20** no ensaio de 18/10, sem o score.
+O benchmark de 20 perguntas: **20/20** no ensaio de 18/10, sem o score. Leva ~6 min: rode enquanto
+explica as 5 peças da curadoria.
+
+**No app:** a aba **Perguntar** aparece. Na primeira visita depois do deploy, a tela "Permission
+Requested": o app pede para usar o Genie **em seu nome** (por isso o `user_api_scopes`). **Authorize**,
+uma vez. Pergunte *"Por que o PRJ-011 atrasou?"* → falta de SRE, 12 semanas, 57 dias de impacto.
 
 > *"Na segunda ele disse que o atraso não custava nada. Hoje ele diz quanto custa, quem está parado,
 > qual projeto vai estourar no mês que vem e por quê. O modelo de IA é o mesmo. A diferença foi tudo
@@ -169,6 +187,9 @@ O benchmark de 20 perguntas: **20/20** no ensaio de 18/10, sem o score.
 | `must be sorted by id` | lista fora de ordem | ordene por id; tabelas por identifier |
 | `modified remotely` no deploy | o Genie foi editado no workspace | leve a mudança para o `gerar_genie.py` e use `--force` só depois disso |
 | "O que vai dar errado" volta FAILED | pergunta aberta, três fontes | o exemplo de SQL com `UNION ALL` (score, entregas, freeze) resolve |
+| App: tela pede "Permission Requested" | consentimento OAuth (o Genie age em seu nome) | **Authorize**, uma vez |
+| App: a aba Perguntar não responde | id do Genie errado no `databricks.yml` do app | confira o id do "Farol · Diretoria" (`bundle summary`) e faça deploy de novo |
+| App: `Requested node type [UNKNOWN] is not supported` | arquivo `*.geniespace.json` dentro da pasta do app | o JSON do Genie mora no bundle `vertice`, nunca no app |
 | O Genie diz que o PRJ-016 tem "100% de chance" como novidade | não filtrou os que já estão abaixo do corte | instrução: no futuro, interessa `situacao = 'ok'` com faixa alto ou medio |
 
 **Tempo medido:** metric view ~10 s; deploy ~10 s; benchmark de 20 perguntas ~6 min (18/10).

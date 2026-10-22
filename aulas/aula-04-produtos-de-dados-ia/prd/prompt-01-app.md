@@ -1,8 +1,9 @@
-# Prompt 2 · O app da Torre: o projeto ganha uma URL
+# Prompt 1 · O app da Torre: o projeto ganha uma URL
 
-**Entrega:** um Databricks App (AppKit, React + TypeScript) com o login do workspace e três telas:
-**Projetos em risco** (com a chance de estouro do modelo, se existir), **Simulador de realocação** e
-**Perguntar** (o agente do prompt 1 dentro do app). **Deploy nº 2** = `databricks apps deploy`.
+**Entrega:** um Databricks App (AppKit, React + TypeScript) com o login do workspace e duas telas:
+**Projetos em risco** (com a chance de estouro do modelo, se existir) e **Simulador de realocação**.
+A terceira, **Perguntar**, chega no prompt 2, quando o agente nasce. **Deploy nº 1 da noite** =
+`databricks apps deploy`.
 
 > Quatro noites de trabalho estão atrás de um SQL Editor. Um dado que só o time de dados consegue
 > abrir é um dado que não existe para a empresa. O dono não abre SQL Editor. Hoje o Farol ganha uma URL.
@@ -42,8 +43,8 @@ três, apague um que você não usa mais (`databricks apps delete <nome>`).
   (horas paradas × 4 semanas, dias de impacto do status ÷ 90 × 30, uma semana de onboarding). E o que
   não vira dinheiro sem premissa (dias de cronograma) fica fora da conta em R$.
 - **O número vem como string** do warehouse. `Number()` antes de qualquer conta.
-- **O primeiro acesso pede licença.** Na URL, cada pessoa vê "Permission Requested": o app pede para
-  usar o Genie em nome dela. **Authorize**, uma vez.
+- **O app cresce por plugins.** Hoje só o `analytics` (ler a gold). No prompt 2 entra o `genie`, e o
+  app passa a perguntar ao agente **em nome de quem está logado**.
 
 ---
 
@@ -51,18 +52,15 @@ três, apague um que você não usa mais (`databricks apps delete <nome>`).
 
 ```
 Leia o CLAUDE.md da raiz e aulas/aula-04-produtos-de-dados-ia/prd/CLAUDE.md.
-Use as skills databricks-apps e databricks-app-design. A gold e o Genie
-"Farol · Diretoria" já existem. O score do modelo (gold.score_estouro_30d)
+Use as skills databricks-apps e databricks-app-design. A gold já existe. O score do modelo (gold.score_estouro_30d)
 pode NÃO existir: nenhuma query de config/queries pode depender dele.
 
 1. Confira `databricks apps list --profile <perfil>` (limite de 3 apps no
-   Free Edition). Descubra o id do Genie "Farol · Diretoria" e crie o app
-   numa pasta minha-torre/ na raiz deste repositório:
+   Free Edition) e crie o app numa pasta minha-torre/ na raiz deste
+   repositório, só com o plugin analytics (o Genie entra no prompt 2):
    databricks apps init --name minha-torre \
-     --features analytics,genie \
+     --features analytics \
      --set analytics.sql-warehouse.id=<warehouse> \
-     --set genie.genie-space.id=<id do Genie "Farol · Diretoria"> \
-     --set "genie.genie-space.name=Farol · Diretoria" \
      --run none --profile <perfil>
    O app é um bundle próprio, dentro da pasta do bundle vertice. Acrescente
    ao databricks.yml da RAIZ (o do vertice) sync: { exclude: ["minha-torre/**"] },
@@ -95,7 +93,7 @@ pode NÃO existir: nenhuma query de config/queries pode depender dele.
      recuperados (dias de impacto da causa nos últimos 90 dias ÷ 90 × 30),
      mobilização = horas de onboarding (editável, 40) × custo_hora, e saldo.
      Explique a conta num <details>.
-   - Perguntar: <GenieChat alias="default" />.
+   Menu com as duas telas (a terceira, Perguntar, entra no prompt 2).
    Sem cache no createApp. Título "Projeto Farol".
 
 4. npm run typecheck, npm run lint, databricks apps validate.
@@ -112,13 +110,12 @@ pode NÃO existir: nenhuma query de config/queries pode depender dele.
 
 - `apps validate`: typegen, lint, typecheck e build ✅.
 - Sem os `GRANT`, o `apps deploy` falha com `INSUFFICIENT_PERMISSIONS` no typegen do build: **é esperado**.
-- Na URL (a 1ª visita pede **Authorize**): **17 de 41** projetos em risco (7 críticos, 4 com farol
+- Na URL: **17 de 41** projetos em risco (7 críticos, 4 com farol
   verde), **R$ 6,5 mi** de estouro, **18** em alto risco em 30 dias ("—" sem o modelo); PRJ-016 e PRJ-030 no topo,
   PRJ-011 com causa "falta de SRE", **PRJ-024** com 46% na coluna P(estouro) ("—" sem o modelo).
 - Simulador: **COL0017** (SRE sênior, PRJ-007, uso de 6%) → **PRJ-011** dá **151 h** no mês,
   **R$ 30,1 mil** de ociosidade evitada, **19,0 dias** de cronograma recuperados, R$ 8,0 mil de
   onboarding e **saldo de R$ 22,1 mil** no mês.
-- Perguntar: *"Por que o PRJ-011 atrasou?"* → falta de SRE, 12 semanas, 57 dias de impacto.
 
 > *"O dono abre isso no celular, com o login da empresa. Vê quem está em risco, quem vai entrar em
 > risco no mês que vem, e simula mover uma SRE parada para o projeto que pede SRE há doze semanas.
@@ -136,10 +133,8 @@ pode NÃO existir: nenhuma query de config/queries pode depender dele.
 | typegen marca tudo `OFFLINE` em 0 s | o `.env` não foi carregado / warehouse parado | `set -a; . ./.env; set +a` e `npm run typegen -- --wait` |
 | Valores como `6465127.22` sem formatação | número veio como string | `Number()` (ou `num()` do `lib/dados.ts`) |
 | `name must be ≤ 26 characters` | nome do app longo | `minha-torre` |
-| Tela pede "Permission Requested" | consentimento OAuth do app (o Genie age em seu nome) | Authorize, uma vez |
 | Deploy cria o app mas ele fica parado | usou só `bundle deploy` | `databricks apps deploy` |
 | `Requested node type [UNKNOWN] is not supported` | arquivo `*.geniespace.json` dentro da pasta do app | nenhum `*.geniespace.json` no app (o do Genie mora no bundle `vertice`) |
-| A aba Perguntar não responde | id do Genie errado no `databricks.yml` do app | confira o id do "Farol · Diretoria" e faça deploy de novo |
 
 **Tempo medido (edição anterior, mesmo app):** `apps init` ~10 s; `apps validate` ~9 s; redeploy com
-permissão ~45 s a 1 min. O deploy com o Genie "Farol · Diretoria" no lugar do de contratos: *a medir no ensaio*.
+permissão ~45 s a 1 min.

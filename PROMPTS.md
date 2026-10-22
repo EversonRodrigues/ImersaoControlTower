@@ -11,7 +11,7 @@ Este arquivo é a sequência inteira, na ordem, para quem quer refazer sozinho.
 | Noite | Prompts | O que existe no fim |
 |---|---|---|
 | [**3** · engenheiro de dados](aulas/aula-03-modelagem-claude-code) | o bundle (à mão) e 1 a 4 | o job de ingestão da noite 2 como código, o pipeline que integra as 3 ferramentas, gold com testes, status semanal com IA e o dashboard |
-| [**4** · cientista e engenheiro de IA](aulas/aula-04-produtos-de-dados-ia) | 5 e 6 | metric view + o agente de IA (Genie curado) e o app da Torre. O modelo de ML e a aprovação no Lakebase estão em [`bonus/`](aulas/aula-04-produtos-de-dados-ia/bonus) |
+| [**4** · cientista e engenheiro de IA](aulas/aula-04-produtos-de-dados-ia) | 5 e 6 | o app da Torre e o agente de IA (metric view + Genie curado), plugado no app. O modelo de ML e a aprovação no Lakebase estão em [`bonus/`](aulas/aula-04-produtos-de-dados-ia/bonus) |
 
 ---
 
@@ -413,9 +413,67 @@ noite 4 leem deles.
 ---
 ## Noite 4 · a Torre responde em português e ganha uma URL
 
-### Prompt 5 · O agente de IA
+### Prompt 5 · O app da Torre
 
-*métricas governadas e o Genie: o dono pergunta em português* · noite 4 · bundle deploy + run + deploy · [texto completo, com o que falar e as armadilhas](aulas/aula-04-produtos-de-dados-ia/prd/prompt-01-agente.md)
+*a Torre na tela do dono* · noite 4 · bundle deploy + apps deploy · [texto completo, com o que falar e as armadilhas](aulas/aula-04-produtos-de-dados-ia/prd/prompt-01-app.md)
+
+```
+Leia o CLAUDE.md da raiz e aulas/aula-04-produtos-de-dados-ia/prd/CLAUDE.md.
+Use as skills databricks-apps e databricks-app-design. A gold já existe. O score do modelo (gold.score_estouro_30d)
+pode NÃO existir: nenhuma query de config/queries pode depender dele.
+
+1. Confira `databricks apps list --profile <perfil>` (limite de 3 apps no
+   Free Edition) e crie o app numa pasta minha-torre/ na raiz deste
+   repositório, só com o plugin analytics (o Genie entra no prompt 2):
+   databricks apps init --name minha-torre \
+     --features analytics \
+     --set analytics.sql-warehouse.id=<warehouse> \
+     --run none --profile <perfil>
+   O app é um bundle próprio, dentro da pasta do bundle vertice. Acrescente
+   ao databricks.yml da RAIZ (o do vertice) sync: { exclude: ["minha-torre/**"] },
+   senão o deploy do vertice sobe o node_modules do app inteiro.
+
+2. config/queries (apague os exemplos do template):
+   - kpis.sql: projetos em andamento, em risco (atenção + crítico),
+     críticos, melancias, estouro previsto e carteira
+     (projeto_situacao_atual). Nada do score aqui.
+   - projetos_risco.sql: projetos em andamento do pior para o melhor, com
+     SPI, CPI, estouro, atraso projetado, farol do gerente × calculado,
+     melancia, a causa mais frequente no status_estruturado dos últimos 90
+     dias e os dias de impacto por falta_sre e por rotatividade.
+   - pessoas_ociosas.sql: pessoas com utilização < 20% nas últimas 12
+     semanas (utilizacao_pessoa_semana), com horas paradas e custo ocioso
+     MÉDIOS por semana e custo_hora.
+   A probabilidade por projeto (gold.score_estouro_30d) vem de uma rota
+   GET /api/score-estouro no servidor que responde {disponivel, linhas}:
+   se a tabela não existir, a tela mostra "—" em vez de quebrar o build.
+   O KPI "alto risco em 30 dias" (faixa_risco = 'alto') sai dessa rota.
+
+3. Telas (português, R$, índices com 2 casas, Number() em tudo que vem do
+   warehouse):
+   - Projetos em risco: 4 KPIs (em risco, estouro previsto, carteira, alto
+     risco em 30 dias) + tabela (situação com cor: crítico vermelho, atenção
+     âmbar; farol do gerente com 🍉 quando é melancia; coluna P(estouro)).
+   - Simulador: escolher uma pessoa ociosa e um projeto destino (só atenção
+     ou crítico; para SRE, ordene pelos dias de falta_sre); mostrar horas no
+     mês (× 4 semanas), ociosidade que deixa de ser paga, dias de cronograma
+     recuperados (dias de impacto da causa nos últimos 90 dias ÷ 90 × 30),
+     mobilização = horas de onboarding (editável, 40) × custo_hora, e saldo.
+     Explique a conta num <details>.
+   Menu com as duas telas (a terceira, Perguntar, entra no prompt 2).
+   Sem cache no createApp. Título "Projeto Farol".
+
+4. npm run typecheck, npm run lint, databricks apps validate.
+   Depois: databricks bundle deploy --profile <perfil> (cria o app e o
+   service principal). Crie scripts/conceder-acesso.sh (lê o
+   service_principal_client_id com apps get e dá USE CATALOG em
+   lakehouse_vertice e USE SCHEMA + SELECT na gold e na silver), rode e
+   faça databricks apps deploy --profile <perfil>. Me mostre a URL.
+```
+
+### Prompt 6 · O agente de IA
+
+*métricas governadas e o Genie, plugado no app: o dono pergunta em português* · noite 4 · bundle deploy + run + deploy + apps deploy · [texto completo, com o que falar e as armadilhas](aulas/aula-04-produtos-de-dados-ia/prd/prompt-02-agente.md)
 
 ```
 Leia o CLAUDE.md da raiz e aulas/aula-04-produtos-de-dados-ia/prd/CLAUDE.md.
@@ -479,67 +537,18 @@ Rode e me mostre a saída:
   python3 scripts/genie.py benchmark "Farol · Diretoria" aulas/aula-04-produtos-de-dados-ia/prd/genie-benchmark-diretoria.json --profile <perfil>
 Se o benchmark der menos de 16/20, mostre os erros e ajuste a INSTRUÇÃO
 (não a pergunta), gere o JSON, faça deploy e rode de novo.
-```
 
-### Prompt 6 · O app da Torre
-
-*a Torre na tela do dono* · noite 4 · apps deploy · [texto completo, com o que falar e as armadilhas](aulas/aula-04-produtos-de-dados-ia/prd/prompt-02-app.md)
-
-```
-Leia o CLAUDE.md da raiz e aulas/aula-04-produtos-de-dados-ia/prd/CLAUDE.md.
-Use as skills databricks-apps e databricks-app-design. A gold e o Genie
-"Farol · Diretoria" já existem. O score do modelo (gold.score_estouro_30d)
-pode NÃO existir: nenhuma query de config/queries pode depender dele.
-
-1. Confira `databricks apps list --profile <perfil>` (limite de 3 apps no
-   Free Edition). Descubra o id do Genie "Farol · Diretoria" e crie o app
-   numa pasta minha-torre/ na raiz deste repositório:
-   databricks apps init --name minha-torre \
-     --features analytics,genie \
-     --set analytics.sql-warehouse.id=<warehouse> \
-     --set genie.genie-space.id=<id do Genie "Farol · Diretoria"> \
-     --set "genie.genie-space.name=Farol · Diretoria" \
-     --run none --profile <perfil>
-   O app é um bundle próprio, dentro da pasta do bundle vertice. Acrescente
-   ao databricks.yml da RAIZ (o do vertice) sync: { exclude: ["minha-torre/**"] },
-   senão o deploy do vertice sobe o node_modules do app inteiro.
-
-2. config/queries (apague os exemplos do template):
-   - kpis.sql: projetos em andamento, em risco (atenção + crítico),
-     críticos, melancias, estouro previsto e carteira
-     (projeto_situacao_atual). Nada do score aqui.
-   - projetos_risco.sql: projetos em andamento do pior para o melhor, com
-     SPI, CPI, estouro, atraso projetado, farol do gerente × calculado,
-     melancia, a causa mais frequente no status_estruturado dos últimos 90
-     dias e os dias de impacto por falta_sre e por rotatividade.
-   - pessoas_ociosas.sql: pessoas com utilização < 20% nas últimas 12
-     semanas (utilizacao_pessoa_semana), com horas paradas e custo ocioso
-     MÉDIOS por semana e custo_hora.
-   A probabilidade por projeto (gold.score_estouro_30d) vem de uma rota
-   GET /api/score-estouro no servidor que responde {disponivel, linhas}:
-   se a tabela não existir, a tela mostra "—" em vez de quebrar o build.
-   O KPI "alto risco em 30 dias" (faixa_risco = 'alto') sai dessa rota.
-
-3. Telas (português, R$, índices com 2 casas, Number() em tudo que vem do
-   warehouse):
-   - Projetos em risco: 4 KPIs (em risco, estouro previsto, carteira, alto
-     risco em 30 dias) + tabela (situação com cor: crítico vermelho, atenção
-     âmbar; farol do gerente com 🍉 quando é melancia; coluna P(estouro)).
-   - Simulador: escolher uma pessoa ociosa e um projeto destino (só atenção
-     ou crítico; para SRE, ordene pelos dias de falta_sre); mostrar horas no
-     mês (× 4 semanas), ociosidade que deixa de ser paga, dias de cronograma
-     recuperados (dias de impacto da causa nos últimos 90 dias ÷ 90 × 30),
-     mobilização = horas de onboarding (editável, 40) × custo_hora, e saldo.
-     Explique a conta num <details>.
-   - Perguntar: <GenieChat alias="default" />.
-   Sem cache no createApp. Título "Projeto Farol".
-
-4. npm run typecheck, npm run lint, databricks apps validate.
-   Depois: databricks bundle deploy --profile <perfil> (cria o app e o
-   service principal). Crie scripts/conceder-acesso.sh (lê o
-   service_principal_client_id com apps get e dá USE CATALOG em
-   lakehouse_vertice e USE SCHEMA + SELECT na gold e na silver), rode e
-   faça databricks apps deploy --profile <perfil>. Me mostre a URL.
+3. Plugue o agente no app minha-torre/ (o do prompt 1), como a tela Perguntar:
+   - databricks.yml do app: variáveis genie_space_id e genie_space_name
+     (o id do "Farol · Diretoria", pelo bundle summary); no recurso do app,
+     user_api_scopes: [dashboards.genie] e o recurso
+     { name: genie-space, genie_space: { name, space_id, permission: CAN_RUN } }.
+   - app.yaml: env DATABRICKS_GENIE_SPACE_ID com valueFrom: genie-space.
+   - server: genie() nos plugins do createApp.
+   - client: tela Perguntar com <GenieChat alias="default" /> e o item no menu.
+   Nenhum arquivo *.geniespace.json dentro da pasta do app.
+   Dentro de minha-torre/: npm run typecheck, databricks bundle deploy e
+   databricks apps deploy --profile <perfil>. Me mostre a URL.
 ```
 ---
 

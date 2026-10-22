@@ -24,8 +24,8 @@ PROMPTS = [
     (3, "Gold + testes", "o produto de dados e as perguntas do dono", f"{A3}/prompt-02-gold.md", "bundle deploy + run"),
     (3, "O job completo", "a Torre roda sozinha, e lê o texto do status com IA", f"{A3}/prompt-03-job-completo.md", "bundle deploy + run"),
     (3, "O dashboard", "o dono vê a Torre", f"{A3}/prompt-04-dashboard.md", "bundle deploy"),
-    (4, "O agente de IA", "métricas governadas e o Genie: o dono pergunta em português", f"{A4}/prompt-01-agente.md", "bundle deploy + run + deploy"),
-    (4, "O app da Torre", "a Torre na tela do dono", f"{A4}/prompt-02-app.md", "apps deploy"),
+    (4, "O app da Torre", "a Torre na tela do dono", f"{A4}/prompt-01-app.md", "bundle deploy + apps deploy"),
+    (4, "O agente de IA", "métricas governadas e o Genie, plugado no app: o dono pergunta em português", f"{A4}/prompt-02-agente.md", "bundle deploy + run + deploy + apps deploy"),
 ]
 
 TITULOS = {3: "Noite 3 · a Torre roda sozinha", 4: "Noite 4 · a Torre responde em português e ganha uma URL"}

@@ -226,7 +226,7 @@ o escopo antes de virar atraso.
 
 **O momento "uau":** a regra diz que o **PRJ-024 está ok**. O modelo dá **46% de chance de ele
 cruzar 0,9 em 30 dias**, e diz por quê: está a 0,01 do corte. E o freeze da Black Friday começa em
-01/11 e trava deploy. O modelo não sabe do calendário; o agente (prompt 1 da noite) junta os dois.
+01/11 e trava deploy. O modelo não sabe do calendário; o agente (prompt 2 da noite) junta os dois.
 
 **A lição de qualidade:** o **PRJ-013** tem 89% de chance com SPI 0,94 na planilha. O status de sexta
 diz 43% concluído; a planilha soma 45%, porque uma tarefa foi digitada com mais de 100% e a silver
