@@ -11,7 +11,7 @@ Este arquivo é a sequência inteira, na ordem, para quem quer refazer sozinho.
 | Noite | Prompts | O que existe no fim |
 |---|---|---|
 | [**3** · engenheiro de dados](aulas/aula-03-modelagem-claude-code) | o bundle (à mão) e 1 a 4 | o job de ingestão da noite 2 como código, o pipeline que integra as 3 ferramentas, gold com testes, status semanal com IA e o dashboard |
-| [**4** · cientista e engenheiro de IA](aulas/aula-04-produtos-de-dados-ia) | 5 a 8 | modelo de estouro em 30 dias no mesmo job, metric view + Genie curado, o app da Torre e a decisão gravada no Lakebase |
+| [**4** · cientista e engenheiro de IA](aulas/aula-04-produtos-de-dados-ia) | 5 e 6 | metric view + o agente de IA (Genie curado) e o app da Torre. O modelo de ML e a aprovação no Lakebase estão em [`bonus/`](aulas/aula-04-produtos-de-dados-ia/bonus) |
 
 ---
 
@@ -407,118 +407,20 @@ FROM lakehouse_vertice.gold.projeto_situacao_atual WHERE status = 'em_andamento'
 ```
 
 O job `vertice_farol` tem **6 tarefas** (2 de ingestão, conferência, medalhão, testes, IA) e roda
-verde de ponta a ponta. Se estes números não baterem, não adianta seguir: a noite 4 treina o
-modelo em cima deles.
+verde de ponta a ponta. Se estes números não baterem, não adianta seguir: o agente e o app da
+noite 4 leem deles.
 
 ---
-## Noite 4 · a Torre prevê, responde e ganha uma URL
+## Noite 4 · a Torre responde em português e ganha uma URL
 
-### Prompt 5 · O modelo
+### Prompt 5 · O agente de IA
 
-*o que vai dar errado no próximo mês* · noite 4 · bundle deploy + run · [texto completo, com o que falar e as armadilhas](aulas/aula-04-produtos-de-dados-ia/prd/prompt-01-modelo.md)
-
-```
-Leia o CLAUDE.md da raiz. Continue o MESMO bundle vertice na raiz deste
-repositório: ML é mais uma camada do job, não um projeto à parte. O "hoje" é
-DATE'2026-10-16'. Nunca current_date(). São três tarefas novas, nesta ordem.
-
-ARMADILHAS MEDIDAS NO FREE EDITION (siga todas):
-- O serverless vem com MLflow 2.11, e registrar modelo no Unity Catalog
-  falha com "s3:PutObject ... explicit deny". Primeira célula de cada
-  notebook: %pip install -q -U "mlflow-skinny[databricks]>=2.21,<3"
-  e dbutils.library.restartPython() na seguinte.
-- XGBoost treina e não carrega de volta: use HistGradientBoosting do sklearn.
-- spark_udf quebra no serverless (InvalidVersion): use mlflow.sklearn.load_model + pandas.
-- DECIMAL vira Decimal no pandas e quebra o registro: .astype(float).
-- mlflow.set_experiment não cria a pasta pai: WorkspaceClient().workspace
-  .mkdirs("/Users/<eu>/vertice") antes.
-- MLflow 2.x: log_model(..., artifact_path="modelo"), nunca name=.
-- Toda célula de texto começa com "# MAGIC %md".
-- Janela nomeada com frame (OVER (w ROWS BETWEEN ...)) dá PARSE_SYNTAX_ERROR:
-  escreva PARTITION BY e ORDER BY por extenso nas janelas com ROWS BETWEEN.
-
-1. src/ml/01-features.sql (sql_task ml_features, depois de
-   testes_de_qualidade E status_com_ia)
-   CREATE SCHEMA IF NOT EXISTS lakehouse_vertice.ml e recrie
-   lakehouse_vertice.ml.features_projeto_semana: uma linha por projeto e
-   semana (sexta), de gold.fato_projeto_semana + gold.projeto_situacao_atual.
-   COMMENT na tabela. Toda feature olha SÓ para trás:
-   - spi, cpi, indice_min = least(spi, cpi); variação em 4 e 8 semanas
-     (d_spi_4s, d_cpi_4s, d_spi_8s, d_cpi_8s, d_indice_min_4s, com lag());
-     semanas_cpi_caindo nas últimas 4
-   - ritmo do último mês: cpi_ultimas_4s = (ev - ev 4 semanas antes) /
-     (ac - ac 4 semanas antes); spi_ultimas_4s o mesmo com pv
-   - pct_fisico = ev / orcamento; pct_prazo = dias desde o início / duração
-   - ociosidade_4s; pct_consultoria_4s e pct_cloud_4s (silver.custos)
-   - saidas_12s: pessoas que apontaram hora no projeto e se desligaram nas
-     últimas 12 semanas (silver.apontamentos + silver.colaboradores)
-   - status_freeze_4s, status_falta_sre_4s, status_fornecedor_4s,
-     status_rotatividade_4s, status_escopo_4s, status_retrabalho_4s,
-     status_com_bloqueio_4s: quantos status dos últimos 28 dias tiveram cada
-     causa_bloqueio (gold.status_estruturado, qualquer método)
-   Os dois alvos, do FUTURO, que nunca entram como feature:
-   alvo_pior_indice_30d = menor least(spi, cpi) nas 4 semanas SEGUINTES
-   (ROWS BETWEEN 1 FOLLOWING AND 4 FOLLOWING) e estoura_30d = 1 se < 0,9.
-   NULL quando ainda não há 4 semanas de futuro (o caso de hoje).
-   elegivel = 1 se SPI e CPI >= 0,9, 84+ dias de projeto, ev < 98% do
-   orçamento e (em andamento ou semana anterior a hoje).
-   No fim, uma query de conferência: linhas, treino, taxa base, linhas de hoje.
-
-2. src/ml/02-modelo.py (notebook_task ml_modelo, widget catalog)
-   a. Teste = elegíveis com rótulo e semana >= 2026-04-03. Treino =
-      rotulados com semana <= 2026-03-06 e pct_prazo > 0,15. 24 features
-      (todas menos segmento, farol_do_gerente, elegivel e os alvos).
-   b. BASELINES no teste, impressos ANTES de treinar: regra de corte atual,
-      folga até o corte (-indice_min), só o CPI, tendência (-d_indice_min_4s).
-   c. HistGradientBoostingRegressor(random_state=42, max_depth=3,
-      learning_rate=0.05, max_iter=300, min_samples_leaf=20) prevendo
-      alvo_pior_indice_30d - indice_min; sigma = desvio do erro no teste;
-      prob = P(pior < 0,9) com erro normal (math.erf). Compare com um
-      HistGradientBoostingClassifier sim/não.
-   d. Métrica do dono: estouro = projeto que vinha 4 semanas com SPI e CPI
-      >= 0,9, cruza e FICA abaixo 2 semanas (pct_prazo > 0,15), a partir de
-      4 semanas depois do início do teste. Avisado = esteve no top 5 da
-      semana em alguma das 8 semanas anteriores. Imprima avisados/estouros e
-      a antecedência média em dias.
-   e. Importância por permutação.
-   f. assert ANTES de registrar: AUC >= 0,75; AUC < 0,98 (acima é
-      vazamento); AUC >= a folga até o corte; avisados >= 70% dos estouros.
-   g. Retreine com todos os rotulados, registre
-      lakehouse_vertice.ml.modelo_estouro_30d com input_example, alias @prod,
-      e grave ml.modelo_metricas (uma linha com versão, AUC, réguas, sigma,
-      estouros, avisados, antecedência e a feature principal).
-
-3. src/ml/03-score.py (notebook_task ml_score, depois de ml_modelo)
-   Carregue models:/lakehouse_vertice.ml.modelo_estouro_30d@prod com
-   mlflow.sklearn.load_model; o sigma vem de ml.modelo_metricas. Pontue os
-   projetos em andamento na semana 2026-10-16; quem tem least(spi, cpi) < 0,9
-   NA FOTOGRAFIA DE HOJE (gold.projeto_situacao_atual) recebe 1,0. ranking
-   por prob; faixa_risco alto >= 0,5, medio >= 0,2, senão baixo.
-   principais_fatores: os 2 ou 3 sinais mais graves, em português, números
-   com vírgula decimal (já abaixo do corte, status abaixo do corte com o
-   cronograma acima, folga < 0,05, CPI caindo, ritmo do mês < 0,85, falta
-   de SRE, freeze, rotatividade, escopo, consultoria, ociosidade >= 25%).
-   Grave lakehouse_vertice.gold.score_estouro_30d com EXATAMENTE projeto_id
-   STRING, data_referencia DATE, prob_estouro_30d DOUBLE, ranking INT,
-   faixa_risco STRING, principais_fatores STRING. COMMENT na tabela e nas
-   colunas: o Genie e o app leem daqui. assert: uma linha por projeto em
-   andamento, prob entre 0 e 1, ranking único, nenhum motivo vazio.
-
-Rode e me mostre a saída:
-  databricks bundle validate --profile <perfil>
-  databricks bundle deploy --profile <perfil>
-  databricks bundle run vertice_farol --profile <perfil>
-E no fim: as métricas de ml.modelo_metricas e o top 25 do score com o motivo.
-```
-
-### Prompt 6 · Métricas + Genie
-
-*o dono pergunta em português* · noite 4 · bundle deploy + run + deploy · [texto completo, com o que falar e as armadilhas](aulas/aula-04-produtos-de-dados-ia/prd/prompt-02-genie.md)
+*métricas governadas e o Genie: o dono pergunta em português* · noite 4 · bundle deploy + run + deploy · [texto completo, com o que falar e as armadilhas](aulas/aula-04-produtos-de-dados-ia/prd/prompt-01-agente.md)
 
 ```
-Continue o bundle vertice na raiz deste repositório. O modelo e o score
-estão prontos. Agora a fórmula de cada KPI num lugar só, e o Genie que o
-dono vai usar.
+Leia o CLAUDE.md da raiz e aulas/aula-04-produtos-de-dados-ia/prd/CLAUDE.md.
+Continue o bundle vertice na raiz deste repositório. Agora a fórmula de
+cada KPI num lugar só, e o agente (Genie) que o dono vai usar.
 
 1. Métricas governadas: src/metricas/metricas.sql (sql_task)
    CREATE OR REPLACE VIEW lakehouse_vertice.gold.mv_projetos WITH METRICS
@@ -543,9 +445,12 @@ dono vai usar.
    - scripts/gerar_genie.py gera resources/farol.geniespace.json
      (serialized_space versão 2; ids de 32 caracteres hex, únicos e em ordem):
      tabelas gold.fato_projeto_semana, gold.projeto_situacao_atual,
-     gold.status_estruturado, gold.utilizacao_pessoa_semana,
-     gold.score_estouro_30d e silver.entregas_fornecedor, e a metric view
-     gold.mv_projetos; as 4 perguntas do dono como perguntas de exemplo.
+     gold.status_estruturado, gold.utilizacao_pessoa_semana e
+     silver.entregas_fornecedor, e a metric view gold.mv_projetos; as 4
+     perguntas do dono como perguntas de exemplo.
+     gold.score_estouro_30d (o modelo) entra SÓ se existir: confira com
+     databricks tables exists lakehouse_vertice.gold.score_estouro_30d
+     --profile <perfil>. Sem ela, nada de instrução nem exemplo sobre score.
    - Instruções de texto: quem pergunta (o dono e a diretoria); HOJE =
      2026-10-16 e o que é "últimos 90 dias / 12 semanas / próximo mês"; as
      fórmulas e as regras de corte; mv_projetos para totais de hoje e
@@ -555,14 +460,13 @@ dono vai usar.
      nao_reportado), mais o SPI e SREs ociosos se a causa for falta_sre;
      gente parada = utilização < 20% em 12 semanas; fornecedor = prazo real ÷
      prometido na silver.entregas_fornecedor; "o que vai dar errado no
-     próximo mês" junta o score (projetos com situacao = 'ok' e faixa alto ou
-     medio, com principais_fatores), as entregas de consultoria em atraso e o
-     change freeze de varejo (01/11/2026 a 10/01/2027) nos projetos de
-     e-commerce; probabilidade de estouro sai da score_estouro_30d na
-     data_referencia mais recente; "quais clientes" devolve cada cliente
-     uma vez.
-   - Um exemplo de SQL para cada uma das 4 perguntas do dono, e um para
-     "qual a chance de o PRJ-024 estourar no próximo mês?".
+     próximo mês" junta as entregas de consultoria em atraso, o change
+     freeze de varejo (01/11/2026 a 10/01/2027) nos projetos de e-commerce
+     e, se o score existir, os projetos com situacao = 'ok' e faixa alto ou
+     medio (com principais_fatores, na data_referencia mais recente);
+     "quais clientes" devolve cada cliente uma vez.
+   - Um exemplo de SQL para cada uma das 4 perguntas do dono (e, se o
+     score existir, um para "qual a chance de o PRJ-024 estourar?").
    - resources/genie.genie_space.yml: recurso genie_farol, título
      "Farol · Diretoria", warehouse ${var.warehouse_id}.
 
@@ -577,14 +481,15 @@ Se o benchmark der menos de 16/20, mostre os erros e ajuste a INSTRUÇÃO
 (não a pergunta), gere o JSON, faça deploy e rode de novo.
 ```
 
-### Prompt 7 · O app da Torre
+### Prompt 6 · O app da Torre
 
-*a Torre na tela do dono* · noite 4 · apps deploy · [texto completo, com o que falar e as armadilhas](aulas/aula-04-produtos-de-dados-ia/prd/prompt-03-app.md)
+*a Torre na tela do dono* · noite 4 · apps deploy · [texto completo, com o que falar e as armadilhas](aulas/aula-04-produtos-de-dados-ia/prd/prompt-02-app.md)
 
 ```
 Leia o CLAUDE.md da raiz e aulas/aula-04-produtos-de-dados-ia/prd/CLAUDE.md.
-Use as skills databricks-apps e databricks-app-design. A gold, o score
-(gold.score_estouro_30d) e o Genie "Farol · Diretoria" já existem.
+Use as skills databricks-apps e databricks-app-design. A gold e o Genie
+"Farol · Diretoria" já existem. O score do modelo (gold.score_estouro_30d)
+pode NÃO existir: nenhuma query de config/queries pode depender dele.
 
 1. Confira `databricks apps list --profile <perfil>` (limite de 3 apps no
    Free Edition). Descubra o id do Genie "Farol · Diretoria" e crie o app
@@ -602,8 +507,7 @@ Use as skills databricks-apps e databricks-app-design. A gold, o score
 2. config/queries (apague os exemplos do template):
    - kpis.sql: projetos em andamento, em risco (atenção + crítico),
      críticos, melancias, estouro previsto e carteira
-     (projeto_situacao_atual), e alto risco em 30 dias (faixa_risco = 'alto'
-     na data_referencia mais recente de score_estouro_30d).
+     (projeto_situacao_atual). Nada do score aqui.
    - projetos_risco.sql: projetos em andamento do pior para o melhor, com
      SPI, CPI, estouro, atraso projetado, farol do gerente × calculado,
      melancia, a causa mais frequente no status_estruturado dos últimos 90
@@ -614,6 +518,7 @@ Use as skills databricks-apps e databricks-app-design. A gold, o score
    A probabilidade por projeto (gold.score_estouro_30d) vem de uma rota
    GET /api/score-estouro no servidor que responde {disponivel, linhas}:
    se a tabela não existir, a tela mostra "—" em vez de quebrar o build.
+   O KPI "alto risco em 30 dias" (faixa_risco = 'alto') sai dessa rota.
 
 3. Telas (português, R$, índices com 2 casas, Number() em tudo que vem do
    warehouse):
@@ -635,44 +540,6 @@ Use as skills databricks-apps e databricks-app-design. A gold, o score
    service_principal_client_id com apps get e dá USE CATALOG em
    lakehouse_vertice e USE SCHEMA + SELECT na gold e na silver), rode e
    faça databricks apps deploy --profile <perfil>. Me mostre a URL.
-```
-
-### Prompt 8 · A aprovação no Lakebase
-
-*a decisão fica registrada (opcional)* · noite 4 · apps deploy · [texto completo, com o que falar e as armadilhas](aulas/aula-04-produtos-de-dados-ia/prd/prompt-04-aprovacao-lakebase.md)
-
-```
-Leia o CLAUDE.md da raiz e aulas/aula-04-produtos-de-dados-ia/prd/CLAUDE.md. Use as skills
-databricks-apps e databricks-lakebase. O app minha-torre já está no ar (prompt 3).
-
-1. Lakebase:
-   databricks postgres create-project minha-torre --profile <perfil>
-   e descubra branch e database (list-branches, list-databases).
-   Adicione ao databricks.yml as variáveis postgres_branch e postgres_database e o recurso
-   do app `postgres` (CAN_CONNECT_AND_CREATE); no app.yaml a env LAKEBASE_ENDPOINT
-   (valueFrom: postgres); no server o plugin lakebase().
-
-2. server/routes/decisoes.ts, registrado em onPluginsReady:
-   - cria o schema torre e a tabela torre.decisoes (id serial, projeto_origem, projeto_destino,
-     recurso_id, tipo 'pessoa', decisao aprovada|recusada, justificativa,
-     horas_recuperadas_mes, economia_mes, dias_recuperados, usuario,
-     criado_em timestamptz default now()).
-   - GET /api/quem-sou, GET /api/decisoes (200 mais recentes), POST /api/decisoes com zod
-     (exporte o schema): projeto ^PRJ-\d{3}$, pessoa ^COL\d{4}$, origem ≠ destino,
-     justificativa de 10 a 1000 caracteres, números com z.coerce. Grave o usuário do header
-     x-forwarded-email.
-   - server/decisoes.test.ts (vitest) testando o schema: aceita válida, recusa justificativa
-     curta, projeto fora do padrão, pessoa fora do padrão e decisão inválida.
-
-3. Cliente: no simulador, textarea de justificativa + botões Aprovar e Recusar (desabilitados
-   com menos de 10 caracteres) que fazem POST e mostram "Decisão nº X aprovada e registrada
-   por <e-mail>". Nova tela Decisões com o histórico (nº, quando, pessoa origem → destino,
-   decisão, justificativa, ociosidade evitada no mês, por quem).
-
-4. typecheck, lint, test, apps validate, apps deploy --profile <perfil>.
-   Prove a gravação: crie scripts/ver_decisoes.py que lê torre.decisoes direto no Postgres
-   (psycopg, senha = token de `databricks postgres generate-database-credential <endpoint>`)
-   e rode com uv run --no-project --with "psycopg[binary]" python ... --profile <perfil>
 ```
 ---
 

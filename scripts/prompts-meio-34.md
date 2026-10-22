@@ -17,7 +17,7 @@ FROM lakehouse_vertice.gold.projeto_situacao_atual WHERE status = 'em_andamento'
 ```
 
 O job `vertice_farol` tem **6 tarefas** (2 de ingestão, conferência, medalhão, testes, IA) e roda
-verde de ponta a ponta. Se estes números não baterem, não adianta seguir: a noite 4 treina o
-modelo em cima deles.
+verde de ponta a ponta. Se estes números não baterem, não adianta seguir: o agente e o app da
+noite 4 leem deles.
 
 ---

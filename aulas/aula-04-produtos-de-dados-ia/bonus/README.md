@@ -1,4 +1,16 @@
-# Bônus da noite 4 · O agente que lê contrato
+# Bônus da noite 4
+
+Três prompts completos e testados que ficaram fora do ao vivo. Faça em casa, depois da noite 4:
+
+| Prompt | O que entrega | Quando fazer |
+|---|---|---|
+| [`prompt-modelo-ml.md`](prompt-modelo-ml.md) | **o modelo de ML**: features → modelo → score no job, `gold.score_estouro_30d` (o PRJ-024 com 46%) | primeiro. Depois dele, o agente e o app passam a mostrar a chance de estouro: refaça o `bundle deploy` do agente e o `apps deploy` do app |
+| [`prompt-aprovacao-lakebase.md`](prompt-aprovacao-lakebase.md) | **a aprovação**: o botão Aprovar grava a decisão no Lakebase | depois do app |
+| [`prompt-agente-de-contratos.md`](prompt-agente-de-contratos.md) | **o agente que lê contrato** (abaixo) | quando quiser |
+
+---
+
+## O agente que lê contrato
 
 Até 21/10 este era o prompt 1 da noite 4. Saiu do roteiro ao vivo para dar lugar ao modelo, ao Genie e
 ao app, mas continua inteiro e testado: faça em casa, depois da noite 4.

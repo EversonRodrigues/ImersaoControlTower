@@ -2,7 +2,7 @@
 
 O app **Projeto Farol** da Vértice Tecnologia (Databricks App, AppKit: React + TypeScript + Express). É o
 resultado dos prompts 3 e 4 da noite 4, e o **plano B** da aula: suba antes de entrar ao vivo.
-Para construir o seu, siga [`../prd/prompt-03-app.md`](../prd/prompt-03-app.md).
+Para construir o seu, siga [`../prd/prompt-02-app.md`](../prd/prompt-02-app.md).
 
 ```
 torre-app/

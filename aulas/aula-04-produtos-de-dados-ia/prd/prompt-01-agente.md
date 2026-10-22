@@ -1,12 +1,15 @@
-# Prompt 2 · Métricas e Genie: o dono pergunta em português
+# Prompt 1 · O agente de IA: o dono pergunta em português
 
-**Entrega:** a metric view `gold.mv_projetos` (a fórmula de cada KPI num lugar só, tarefa
-`metricas_governadas` no job) e o Genie Agent **"Farol · Diretoria"** como recurso do bundle, lendo a
-gold, a metric view e o score do prompt 1. Testado com um benchmark de 20 perguntas. **Deploy nº 2.**
+**Entrega:** o agente de IA da diretoria, um **Genie Agent** ("Farol · Diretoria") que recebe a pergunta
+em português, escreve o SQL, roda nas tabelas que você liberou e responde citando os números. Embaixo
+dele, a metric view `gold.mv_projetos` (a fórmula de cada KPI num lugar só, tarefa
+`metricas_governadas` no job). O Genie é recurso do bundle e lê a gold, a metric view e, **se existir**,
+o score do modelo (`gold.score_estouro_30d`, demonstrado na abertura e no [bônus](../bonus/prompt-modelo-ml.md)).
+Testado com um benchmark de 20 perguntas. **Deploy nº 1 da noite.**
 
 > Na segunda, o Genie da noite 1 errou as quatro perguntas do dono ("nenhum atraso custa nada"). O
 > modelo de IA dele é o mesmo de hoje. Mudou tudo que está embaixo: o dado integrado e testado, a
-> fórmula escrita uma vez, o score e as instruções de negócio.
+> fórmula escrita uma vez e as instruções de negócio.
 
 ---
 
@@ -32,6 +35,10 @@ Depois, abra o Genie da noite 1 ("Farol · Noite 1 (bronze, sem curadoria)") e f
 
 **Enquanto ele trabalha, você explica:**
 
+- **O que faz disso um agente.** Um chat comum responde de memória e inventa. O Genie tem uma
+  **ferramenta** (escrever e rodar SQL no warehouse), olha o resultado e decide o próximo passo; no
+  modo Agent ele quebra uma pergunta aberta em várias consultas. E só enxerga o que o Unity Catalog
+  deixa a pessoa que pergunta enxergar.
 - **Metric view guarda a FÓRMULA, não o número.** `MEASURE(cpi)` no Genie, no SQL e no app é sempre
   `SUM(ev) / SUM(ac)`, recalculado no grão que a pergunta pedir (projeto, cliente, segmento,
   ferramenta, carteira). Razão não se soma: o CPI da carteira é ΣEV ÷ ΣAC, não a média dos CPIs.
@@ -39,10 +46,10 @@ Depois, abra o Genie da noite 1 ("Farol · Noite 1 (bronze, sem curadoria)") e f
   significar CPI; "farol mentiroso" passa a significar melancia.
 - **Genie como código.** As instruções de negócio (o "hoje" do dataset, as regras de corte, onde achar a
   causa do atraso, o que é "próximo mês") viram arquivo versionado, com diff e revisão.
-- **A pergunta 4 agora tem resposta completa.** "O que vai dar errado no próximo mês" junta três
-  fontes: o **score** (os projetos "ok" com risco alto ou médio, com o motivo), as entregas de
-  consultoria atrasadas e o change freeze da Black Friday nos e-commerces. O PRJ-024 aparece duas
-  vezes: 46% no modelo **e** no freeze. É o que o modelo sozinho não via.
+- **A pergunta 4 ganha resposta.** "O que vai dar errado no próximo mês" junta as entregas de
+  consultoria atrasadas (CodeForge) e o change freeze da Black Friday nos e-commerces, que começa em
+  01/11. Com o score do modelo nas tabelas, entram também os projetos "ok" com risco alto ou médio: o
+  PRJ-024 aparece duas vezes, 46% no modelo **e** no freeze.
 - **Benchmark é teste de IA.** 20 perguntas com a resposta certa em SQL. O script roda cada uma no
   Genie e compara. Mudou a instrução? Roda o benchmark. É o mesmo raciocínio do teste da gold.
 - **Ordem que importa:** o Genie só é criado se as tabelas já existem (a metric view nasce no job).
@@ -53,9 +60,9 @@ Depois, abra o Genie da noite 1 ("Farol · Noite 1 (bronze, sem curadoria)") e f
 ## O prompt
 
 ```
-Continue o bundle vertice na raiz deste repositório. O modelo e o score
-estão prontos. Agora a fórmula de cada KPI num lugar só, e o Genie que o
-dono vai usar.
+Leia o CLAUDE.md da raiz e aulas/aula-04-produtos-de-dados-ia/prd/CLAUDE.md.
+Continue o bundle vertice na raiz deste repositório. Agora a fórmula de
+cada KPI num lugar só, e o agente (Genie) que o dono vai usar.
 
 1. Métricas governadas: src/metricas/metricas.sql (sql_task)
    CREATE OR REPLACE VIEW lakehouse_vertice.gold.mv_projetos WITH METRICS
@@ -80,9 +87,12 @@ dono vai usar.
    - scripts/gerar_genie.py gera resources/farol.geniespace.json
      (serialized_space versão 2; ids de 32 caracteres hex, únicos e em ordem):
      tabelas gold.fato_projeto_semana, gold.projeto_situacao_atual,
-     gold.status_estruturado, gold.utilizacao_pessoa_semana,
-     gold.score_estouro_30d e silver.entregas_fornecedor, e a metric view
-     gold.mv_projetos; as 4 perguntas do dono como perguntas de exemplo.
+     gold.status_estruturado, gold.utilizacao_pessoa_semana e
+     silver.entregas_fornecedor, e a metric view gold.mv_projetos; as 4
+     perguntas do dono como perguntas de exemplo.
+     gold.score_estouro_30d (o modelo) entra SÓ se existir: confira com
+     databricks tables exists lakehouse_vertice.gold.score_estouro_30d
+     --profile <perfil>. Sem ela, nada de instrução nem exemplo sobre score.
    - Instruções de texto: quem pergunta (o dono e a diretoria); HOJE =
      2026-10-16 e o que é "últimos 90 dias / 12 semanas / próximo mês"; as
      fórmulas e as regras de corte; mv_projetos para totais de hoje e
@@ -92,14 +102,13 @@ dono vai usar.
      nao_reportado), mais o SPI e SREs ociosos se a causa for falta_sre;
      gente parada = utilização < 20% em 12 semanas; fornecedor = prazo real ÷
      prometido na silver.entregas_fornecedor; "o que vai dar errado no
-     próximo mês" junta o score (projetos com situacao = 'ok' e faixa alto ou
-     medio, com principais_fatores), as entregas de consultoria em atraso e o
-     change freeze de varejo (01/11/2026 a 10/01/2027) nos projetos de
-     e-commerce; probabilidade de estouro sai da score_estouro_30d na
-     data_referencia mais recente; "quais clientes" devolve cada cliente
-     uma vez.
-   - Um exemplo de SQL para cada uma das 4 perguntas do dono, e um para
-     "qual a chance de o PRJ-024 estourar no próximo mês?".
+     próximo mês" junta as entregas de consultoria em atraso, o change
+     freeze de varejo (01/11/2026 a 10/01/2027) nos projetos de e-commerce
+     e, se o score existir, os projetos com situacao = 'ok' e faixa alto ou
+     medio (com principais_fatores, na data_referencia mais recente);
+     "quais clientes" devolve cada cliente uma vez.
+   - Um exemplo de SQL para cada uma das 4 perguntas do dono (e, se o
+     score existir, um para "qual a chance de o PRJ-024 estourar?").
    - resources/genie.genie_space.yml: recurso genie_farol, título
      "Farol · Diretoria", warehouse ${var.warehouse_id}.
 
@@ -137,11 +146,11 @@ As quatro perguntas do dono, no Genie:
 1. *atrasados e de quais clientes* → 17 projetos, com SPI e CPI;
 2. *quanto custa* → **R$ 6,47 mi** de estouro previsto, margem projetada de 20%;
 3. *gente parada* → as duas SREs do PRJ-007 a ~5% de utilização, e o PRJ-011 pedindo SRE no status;
-4. *o que vai dar errado no próximo mês* → os projetos "ok" com risco alto ou médio no modelo (entre
-   eles o **PRJ-024, 46%**), as 5 entregas atrasadas da CodeForge e o freeze de 01/11 nos e-commerces.
+4. *o que vai dar errado no próximo mês* → as 5 entregas atrasadas da CodeForge e o freeze de 01/11
+   nos e-commerces (PRJ-003, 011, 024); com o score, também os projetos "ok" com risco alto ou médio
+   (entre eles o **PRJ-024, 46%**).
 
-O benchmark de 20 perguntas: **20/20** no ensaio de 18/10, sem o score. Com o score nas tabelas e a
-instrução nova da pergunta 4: *a medir no ensaio*.
+O benchmark de 20 perguntas: **20/20** no ensaio de 18/10, sem o score.
 
 > *"Na segunda ele disse que o atraso não custava nada. Hoje ele diz quanto custa, quem está parado,
 > qual projeto vai estourar no mês que vem e por quê. O modelo de IA é o mesmo. A diferença foi tudo

@@ -96,4 +96,4 @@ echo "  tabelas do modelo que sobraram: $RESTO"
 echo "  modelos que sobraram: $SOBRA_MODELO"
 # o schema ml fica (vazio): o prompt 1 recria tudo com CREATE SCHEMA IF NOT EXISTS
 if [ "$RESTO" != "0" ] || [ "$SOBRA_MODELO" != "0" ]; then echo "Sobrou coisa. NÃO comece o prompt 1 assim."; exit 1; fi
-echo "Zerado. O prompt 1 tem que reconstruir tudo do nada: prd/prompt-01-modelo.md."
+echo "Zerado. O prompt do modelo (bônus) tem que reconstruir tudo do nada: bonus/prompt-modelo-ml.md."

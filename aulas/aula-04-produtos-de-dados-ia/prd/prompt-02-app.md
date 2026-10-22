@@ -1,8 +1,8 @@
-# Prompt 3 · O app da Torre: o projeto ganha uma URL
+# Prompt 2 · O app da Torre: o projeto ganha uma URL
 
 **Entrega:** um Databricks App (AppKit, React + TypeScript) com o login do workspace e três telas:
-**Projetos em risco** (com a chance de estouro do prompt 1), **Simulador de realocação** e
-**Perguntar** (o Genie do prompt 2 dentro do app). **Deploy nº 3** = `databricks apps deploy`.
+**Projetos em risco** (com a chance de estouro do modelo, se existir), **Simulador de realocação** e
+**Perguntar** (o agente do prompt 1 dentro do app). **Deploy nº 2** = `databricks apps deploy`.
 
 > Quatro noites de trabalho estão atrás de um SQL Editor. Um dado que só o time de dados consegue
 > abrir é um dado que não existe para a empresa. O dono não abre SQL Editor. Hoje o Farol ganha uma URL.
@@ -51,8 +51,9 @@ três, apague um que você não usa mais (`databricks apps delete <nome>`).
 
 ```
 Leia o CLAUDE.md da raiz e aulas/aula-04-produtos-de-dados-ia/prd/CLAUDE.md.
-Use as skills databricks-apps e databricks-app-design. A gold, o score
-(gold.score_estouro_30d) e o Genie "Farol · Diretoria" já existem.
+Use as skills databricks-apps e databricks-app-design. A gold e o Genie
+"Farol · Diretoria" já existem. O score do modelo (gold.score_estouro_30d)
+pode NÃO existir: nenhuma query de config/queries pode depender dele.
 
 1. Confira `databricks apps list --profile <perfil>` (limite de 3 apps no
    Free Edition). Descubra o id do Genie "Farol · Diretoria" e crie o app
@@ -70,8 +71,7 @@ Use as skills databricks-apps e databricks-app-design. A gold, o score
 2. config/queries (apague os exemplos do template):
    - kpis.sql: projetos em andamento, em risco (atenção + crítico),
      críticos, melancias, estouro previsto e carteira
-     (projeto_situacao_atual), e alto risco em 30 dias (faixa_risco = 'alto'
-     na data_referencia mais recente de score_estouro_30d).
+     (projeto_situacao_atual). Nada do score aqui.
    - projetos_risco.sql: projetos em andamento do pior para o melhor, com
      SPI, CPI, estouro, atraso projetado, farol do gerente × calculado,
      melancia, a causa mais frequente no status_estruturado dos últimos 90
@@ -82,6 +82,7 @@ Use as skills databricks-apps e databricks-app-design. A gold, o score
    A probabilidade por projeto (gold.score_estouro_30d) vem de uma rota
    GET /api/score-estouro no servidor que responde {disponivel, linhas}:
    se a tabela não existir, a tela mostra "—" em vez de quebrar o build.
+   O KPI "alto risco em 30 dias" (faixa_risco = 'alto') sai dessa rota.
 
 3. Telas (português, R$, índices com 2 casas, Number() em tudo que vem do
    warehouse):
@@ -112,8 +113,8 @@ Use as skills databricks-apps e databricks-app-design. A gold, o score
 - `apps validate`: typegen, lint, typecheck e build ✅.
 - Sem os `GRANT`, o `apps deploy` falha com `INSUFFICIENT_PERMISSIONS` no typegen do build: **é esperado**.
 - Na URL (a 1ª visita pede **Authorize**): **17 de 41** projetos em risco (7 críticos, 4 com farol
-  verde), **R$ 6,5 mi** de estouro, **18** em alto risco em 30 dias; PRJ-016 e PRJ-030 no topo,
-  PRJ-011 com causa "falta de SRE", **PRJ-024** com 46% na coluna P(estouro).
+  verde), **R$ 6,5 mi** de estouro, **18** em alto risco em 30 dias ("—" sem o modelo); PRJ-016 e PRJ-030 no topo,
+  PRJ-011 com causa "falta de SRE", **PRJ-024** com 46% na coluna P(estouro) ("—" sem o modelo).
 - Simulador: **COL0017** (SRE sênior, PRJ-007, uso de 6%) → **PRJ-011** dá **151 h** no mês,
   **R$ 30,1 mil** de ociosidade evitada, **19,0 dias** de cronograma recuperados, R$ 8,0 mil de
   onboarding e **saldo de R$ 22,1 mil** no mês.
@@ -131,7 +132,7 @@ Use as skills databricks-apps e databricks-app-design. A gold, o score
 |---|---|---|
 | `reached the maximum limit of 3 apps` | o Free Edition aceita 3 apps | apague um app que não usa mais |
 | `Error building app` + `INSUFFICIENT_PERMISSIONS` nos logs | o service principal não tem `USE CATALOG` | `bash scripts/conceder-acesso.sh <perfil> minha-torre` e `apps deploy` de novo |
-| `TABLE_OR_VIEW_NOT_FOUND` no `apps validate` | query de `config/queries` aponta para tabela que não existe | rode o job (prompt 1); tabela opcional vai numa rota do servidor |
+| `TABLE_OR_VIEW_NOT_FOUND` no `apps validate` | query de `config/queries` aponta para tabela que não existe | tabela opcional (o score) vai numa rota do servidor, nunca em `config/queries` |
 | typegen marca tudo `OFFLINE` em 0 s | o `.env` não foi carregado / warehouse parado | `set -a; . ./.env; set +a` e `npm run typegen -- --wait` |
 | Valores como `6465127.22` sem formatação | número veio como string | `Number()` (ou `num()` do `lib/dados.ts`) |
 | `name must be ≤ 26 characters` | nome do app longo | `minha-torre` |

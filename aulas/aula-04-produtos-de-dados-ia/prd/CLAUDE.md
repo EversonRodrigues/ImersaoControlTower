@@ -44,10 +44,14 @@ conferência, medalhão, testes, IA) e o dashboard "Projeto Farol · Portfólio"
 
 | Prompt | Entrega |
 |---|---|
-| 1 · o modelo | `src/ml/` (features SQL, modelo e score em notebook), 3 tarefas `ml_*`, `gold.score_estouro_30d` |
-| 2 · métricas + Genie | `src/metricas/metricas.sql` (`mv_projetos`), tarefa `metricas_governadas`, `scripts/gerar_genie.py` + `resources/genie.genie_space.yml` |
-| 3 · o app | `minha-torre/` (AppKit): KPIs, projetos em risco com P(estouro), simulador, Genie |
-| 4 · aprovação (opcional) | Lakebase + botão Aprovar/Recusar + tela Decisões |
+| 1 · o agente de IA | `src/metricas/metricas.sql` (`mv_projetos`), tarefa `metricas_governadas`, `scripts/gerar_genie.py` + `resources/genie.genie_space.yml` |
+| 2 · o app | `minha-torre/` (AppKit): KPIs, projetos em risco com P(estouro), simulador, Genie |
+| bônus · o modelo | `src/ml/` (features SQL, modelo e score em notebook), 3 tarefas `ml_*`, `gold.score_estouro_30d` (`bonus/prompt-modelo-ml.md`; ao vivo, só demonstrado) |
+| bônus · aprovação | Lakebase + botão Aprovar/Recusar + tela Decisões (`bonus/prompt-aprovacao-lakebase.md`) |
+
+**Ao vivo são 2 prompts (agente e app).** O modelo é demonstrado pelo instrutor; no repositório do aluno
+o `gold.score_estouro_30d` **pode não existir**: o Genie só inclui a tabela se ela existir, e o app lê o
+score por uma rota do servidor que responde `{disponivel:false}`. Nenhuma query de `config/queries` usa o score.
 
 **Contrato do score** (o Genie e o app leem daqui; nome e tipo fixos):
 `projeto_id STRING, data_referencia DATE, prob_estouro_30d DOUBLE, ranking INT, faixa_risco STRING, principais_fatores STRING`.

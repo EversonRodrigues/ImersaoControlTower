@@ -1,8 +1,12 @@
-# Prompt 1 · O modelo: o que vai dar errado no próximo mês
+# Bônus · O modelo de ML: o que vai dar errado no próximo mês
+
+> Saiu do ao vivo em 22/10: na aula, o modelo é **demonstrado** pelo instrutor (já rodado no gabarito).
+> Este é o prompt completo e testado para você fazer em casa. Depois dele, o agente e o app passam a
+> mostrar a chance de estouro (rode de novo o `bundle deploy` do agente e o `apps deploy` do app).
 
 **Entrega:** três tarefas novas no job `vertice_farol` (`ml_features` → `ml_modelo` → `ml_score`) e,
 no fim delas, `gold.score_estouro_30d`: os 41 projetos em andamento com a **chance de estourar nos
-próximos 30 dias** e o **motivo em português**. **Deploy nº 1 da noite.**
+próximos 30 dias** e o **motivo em português**. **Deploy nº 1.**
 
 > **Onde fica cada coisa:** o laboratório do cientista (features, métricas, o modelo) mora no schema
 > `lakehouse_vertice.ml`. Na `gold` entra só o resultado, `gold.score_estouro_30d`, que o Genie e o
@@ -222,7 +226,7 @@ o escopo antes de virar atraso.
 
 **O momento "uau":** a regra diz que o **PRJ-024 está ok**. O modelo dá **46% de chance de ele
 cruzar 0,9 em 30 dias**, e diz por quê: está a 0,01 do corte. E o freeze da Black Friday começa em
-01/11 e trava deploy. O modelo não sabe do calendário; o Genie do prompt 2 vai juntar os dois.
+01/11 e trava deploy. O modelo não sabe do calendário; o agente (prompt 1 da noite) junta os dois.
 
 **A lição de qualidade:** o **PRJ-013** tem 89% de chance com SPI 0,94 na planilha. O status de sexta
 diz 43% concluído; a planilha soma 45%, porque uma tarefa foi digitada com mais de 100% e a silver
@@ -253,7 +257,7 @@ brilhante e inútil, e o `assert < 0,98` barra.
 | `Function ... is not empty` ao apagar o modelo | versão órfã de um registro que falhou | `prd/99-limpar-modelo.sh` apaga as versões antes |
 
 **Tempo medido (19/10):** features ~20 s · modelo ~1 min (+ ~1 min de partida do serverless) · score
-~45 s. O job inteiro, agora com a ingestão na frente: *a medir no ensaio*.
+~45 s. O job inteiro, com as 10 tarefas (ingestão na frente): **9 min 55 s**, todas verdes (ensaio de 21/10).
 
 Ensaiar de novo, do zero (só o ML; não toca na noite 3):
 

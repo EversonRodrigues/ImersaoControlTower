@@ -1,10 +1,10 @@
-# Prompt 4 (opcional) · A aprovação: a decisão sai do WhatsApp
+# Bônus · A aprovação no Lakebase: a decisão sai do WhatsApp
 
 **Entrega:** o botão **Aprovar / Recusar** do simulador grava a decisão no **Lakebase** (Postgres) com
-o usuário do login e o horário, e a tela **Decisões** mostra o histórico. **Deploy nº 4** = `databricks apps deploy`.
+o usuário do login e o horário, e a tela **Decisões** mostra o histórico. Deploy = `databricks apps deploy`.
 
-> **Opcional.** Entra se sobrar tempo depois do app. Se não sobrar, mostre o botão **Aprovar** no
-> `farol-torre` (o gabarito já tem o Lakebase) e deixe este prompt como lição de casa. Nunca corte o pitch.
+> **Bônus, fora do ao vivo desde 22/10.** O botão **Aprovar** já funciona no `farol-torre` (o gabarito
+> tem o Lakebase). Faça em casa, depois do app da noite 4.
 
 > Até hoje, mover uma SRE de um projeto para outro era decidido por WhatsApp, e ninguém sabia quem
 > aprovou, quando e por quê. A Torre fecha o ciclo: o dado vira decisão, e a decisão vira dado.
@@ -34,7 +34,7 @@ Pergunte: *"e agora, quem aprova? onde isso fica registrado?"*
 
 ```
 Leia o CLAUDE.md da raiz e aulas/aula-04-produtos-de-dados-ia/prd/CLAUDE.md. Use as skills
-databricks-apps e databricks-lakebase. O app minha-torre já está no ar (prompt 3).
+databricks-apps e databricks-lakebase. O app minha-torre já está no ar (prompt 2 da noite 4).
 
 1. Lakebase:
    databricks postgres create-project minha-torre --profile <perfil>

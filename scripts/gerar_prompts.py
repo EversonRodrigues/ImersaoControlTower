@@ -24,13 +24,11 @@ PROMPTS = [
     (3, "Gold + testes", "o produto de dados e as perguntas do dono", f"{A3}/prompt-02-gold.md", "bundle deploy + run"),
     (3, "O job completo", "a Torre roda sozinha, e lê o texto do status com IA", f"{A3}/prompt-03-job-completo.md", "bundle deploy + run"),
     (3, "O dashboard", "o dono vê a Torre", f"{A3}/prompt-04-dashboard.md", "bundle deploy"),
-    (4, "O modelo", "o que vai dar errado no próximo mês", f"{A4}/prompt-01-modelo.md", "bundle deploy + run"),
-    (4, "Métricas + Genie", "o dono pergunta em português", f"{A4}/prompt-02-genie.md", "bundle deploy + run + deploy"),
-    (4, "O app da Torre", "a Torre na tela do dono", f"{A4}/prompt-03-app.md", "apps deploy"),
-    (4, "A aprovação no Lakebase", "a decisão fica registrada (opcional)", f"{A4}/prompt-04-aprovacao-lakebase.md", "apps deploy"),
+    (4, "O agente de IA", "métricas governadas e o Genie: o dono pergunta em português", f"{A4}/prompt-01-agente.md", "bundle deploy + run + deploy"),
+    (4, "O app da Torre", "a Torre na tela do dono", f"{A4}/prompt-02-app.md", "apps deploy"),
 ]
 
-TITULOS = {3: "Noite 3 · a Torre roda sozinha", 4: "Noite 4 · a Torre prevê, responde e ganha uma URL"}
+TITULOS = {3: "Noite 3 · a Torre roda sozinha", 4: "Noite 4 · a Torre responde em português e ganha uma URL"}
 INTERVALO = {3: "prompts-meio-34.md"}   # o rodapé entra sempre, no fim
 
 
